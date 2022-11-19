@@ -3,7 +3,7 @@ module github.com/zeromicro/go-zero
 go 1.16
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.0.14
+	github.com/ClickHouse/clickhouse-go/v2 v2.3.0
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/alicebob/miniredis/v2 v2.23.1
 	github.com/fatih/color v1.13.0
@@ -33,7 +33,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.10.0
 	go.uber.org/automaxprocs v1.5.1
 	go.uber.org/goleak v1.2.0
-	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10
+	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
 	golang.org/x/time v0.2.0
 	google.golang.org/genproto v0.0.0-20221111202108-142d8a6fa32e
 	google.golang.org/grpc v1.50.1
@@ -51,7 +51,4 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.8.0 // indirect
-	go.uber.org/zap v1.21.0 // indirect
 )
