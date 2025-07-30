@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/color"
@@ -24,12 +25,12 @@ import (
 )
 
 const (
-	limitBodyBytes         = 1024
-	limitDetailedBodyBytes = 4096
-	defaultSlowThreshold   = time.Millisecond * 500
+	limitBodyBytes       = 1024
+	defaultSlowThreshold = time.Millisecond * 500
 )
 
 var slowThreshold = syncx.ForAtomicDuration(defaultSlowThreshold)
+var limitDetailedBodyBytes atomic.Uint32
 
 // LogHandler returns a middleware that logs http request and response.
 func LogHandler(next http.Handler) http.Handler {
@@ -96,7 +97,12 @@ func DetailedLogHandler(next http.Handler) http.Handler {
 
 		var dup io.ReadCloser
 		// https://github.com/zeromicro/go-zero/issues/3564
-		r.Body, dup = iox.LimitDupReadCloser(r.Body, limitDetailedBodyBytes)
+		if limitDetailedBodyBytes.Load() == 0 {
+			// The maximum length is not set or zero. Print the complete body to the log.
+			r.Body, dup = iox.DupReadCloser(r.Body)
+		} else {
+			r.Body, dup = iox.LimitDupReadCloser(r.Body, int64(limitDetailedBodyBytes.Load()))
+		}
 		logs := new(internal.LogCollector)
 		next.ServeHTTP(lrw, r.WithContext(internal.WithLogCollector(r.Context(), logs)))
 		r.Body = dup
@@ -107,6 +113,11 @@ func DetailedLogHandler(next http.Handler) http.Handler {
 // SetSlowThreshold sets the slow threshold.
 func SetSlowThreshold(threshold time.Duration) {
 	slowThreshold.Set(threshold)
+}
+
+// SetLimitDetailedBodyBytes Set the maximum length of the body contained in the log
+func SetLimitDetailedBodyBytes(limit uint32) {
+	limitDetailedBodyBytes.Store(limit)
 }
 
 func dumpRequest(r *http.Request) string {

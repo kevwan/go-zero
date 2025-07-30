@@ -91,20 +91,45 @@ func TestLogHandlerSlow(t *testing.T) {
 func TestDetailedLogHandler_LargeBody(t *testing.T) {
 	lbuf := logtest.NewCollector(t)
 
+	const limit uint32 = 1024
+	SetLimitDetailedBodyBytes(limit)
+
 	var buf bytes.Buffer
-	for i := 0; i < limitDetailedBodyBytes<<2; i++ {
+	for i := 0; i < int(limitDetailedBodyBytes.Load())<<2; i++ {
 		buf.WriteByte('a')
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "http://localhost", &buf)
 	h := DetailedLogHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.Copy(io.Discard, r.Body)
+		_, _ = io.Copy(io.Discard, r.Body)
 	}))
 	resp := httptest.NewRecorder()
 	h.ServeHTTP(resp, req)
 
 	// extra 200 for the length of POST request headers
-	assert.True(t, len(lbuf.Content()) < limitDetailedBodyBytes+200)
+	assert.True(t, len(lbuf.Content()) < int(limit)+200)
+}
+
+func TestDetailedLogHandler_LargeBody_NoLimit(t *testing.T) {
+	lbuf := logtest.NewCollector(t)
+
+	// No limit
+	SetLimitDetailedBodyBytes(0)
+	const bodyContentLength = 2048
+	var buf bytes.Buffer
+	for i := 0; i < bodyContentLength; i++ {
+		buf.WriteByte('a')
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", &buf)
+	h := DetailedLogHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+	}))
+	resp := httptest.NewRecorder()
+	h.ServeHTTP(resp, req)
+
+	// No limit, log length is greater than the passed-in body length.
+	assert.True(t, len(lbuf.Content()) > bodyContentLength)
 }
 
 func TestDetailedLogHandler_Hijack(t *testing.T) {
